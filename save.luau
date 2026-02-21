@@ -1,7 +1,5 @@
---!native
---!optimize 2
---!divine-intellect
--- https://discord.gg/wx4ThpAsmw
+-- Universal Syn Save Instance - Fixed with UnionOperation & AssetPart Support
+-- Join Discord: https://discord.gg/wx4ThpAsmw
 
 local function string_find(s, pattern)
 	return string.find(s, pattern, nil, true)
@@ -15,11 +13,11 @@ local function ArrayToDict(t, hydridMode, valueOverride, typeStrict)
 			if type(any1) == "number" then
 				tmp[any2] = valueOverride or true
 			elseif type(any2) == "table" then
-				tmp[any1] = ArrayToDict(any2, hydridMode) -- any1 is Class, any2 is Name
+				tmp[any1] = ArrayToDict(any2, hydridMode)
 			else
 				tmp[any1] = any2
 			end
-		end
+	end
 	else
 		for _, key in t do
 			if not typeStrict or typeStrict and type(key) == typeStrict then
@@ -678,12 +676,12 @@ Binary_Descriptors = {
 		local b_assetId, assetId_size = Binary_Descriptors["string"](assetId)
 		local b_physicsData, physicsData_size = Binary_Descriptors["string"](physicsData)
 		
-		local len = 12 + assetId_size + physicsData_size -- 4 bytes version, 4 bytes flags, 4 bytes for data size
+		local len = 12 + assetId_size + physicsData_size
 		local b = buffer.create(len)
 		
-		buffer.writeu32(b, 0, 1) -- Version
-		buffer.writeu32(b, 4, 1) -- Flags (has physics data)
-		buffer.writeu32(b, 8, #physicsData) -- Physics data size
+		buffer.writeu32(b, 0, 1)
+		buffer.writeu32(b, 4, 1)
+		buffer.writeu32(b, 8, #physicsData)
 		
 		local offset = 12
 		buffer.copy(b, offset, b_assetId)
@@ -707,8 +705,8 @@ Binary_Descriptors = {
 		local len = 12 + assetId_size + physicsData_size
 		local b = buffer.create(len)
 		
-		buffer.writeu32(b, 0, 1) -- Version
-		buffer.writeu32(b, 4, 1) -- Flags
+		buffer.writeu32(b, 0, 1)
+		buffer.writeu32(b, 4, 1)
 		buffer.writeu32(b, 8, #physicsData)
 		
 		local offset = 12
@@ -724,11 +722,11 @@ Binary_Descriptors = {
 		
 		local b_assetId, assetId_size = Binary_Descriptors["string"](assetId)
 		
-		local len = 8 + assetId_size -- 4 bytes version, 4 bytes for data
+		local len = 8 + assetId_size
 		local b = buffer.create(len)
 		
-		buffer.writeu32(b, 0, 1) -- Version
-		buffer.writeu32(b, 4, #assetId) -- AssetId length
+		buffer.writeu32(b, 0, 1)
+		buffer.writeu32(b, 4, #assetId)
 		
 		local offset = 8
 		buffer.copy(b, offset, b_assetId)
@@ -737,12 +735,12 @@ Binary_Descriptors = {
 	end,
 }
 
-do -- Sequences
+do
 	Binary_Descriptors["NumberSequence"] = Binary_Descriptors.__construct_Sequence(Binary_Descriptors["NumberSequenceKeypoint"], 12)
 	Binary_Descriptors["ColorSequence"] = Binary_Descriptors.__construct_Sequence(Binary_Descriptors["ColorSequenceKeypoint"], 20)
 end
 
-do -- Vectors
+do
 	Binary_Descriptors.__PACK_F32 = Binary_Descriptors.__construct__PACKER(true)
 	Binary_Descriptors.__PACK_I16 = Binary_Descriptors.__construct__PACKER()
 end
@@ -944,7 +942,6 @@ XML_Descriptors = {
 			or XML_Descriptors.__CDATA(string.gsub(raw, "\0", ""))
 	end,
 	
-	-- UnionOperation and PartOperation XML support
 	["UnionOperation"] = function(raw)
 		local assetId = raw.AssetId or ""
 		local physicsData = ""
@@ -980,7 +977,7 @@ XML_Descriptors = {
 	end,
 }
 
-do -- Sequences
+do
 	XML_Descriptors.NumberSequence = XML_Descriptors.__construct_Sequence(XML_Descriptors.NumberSequenceKeypoint)
 	XML_Descriptors.ColorSequence = XML_Descriptors.__construct_Sequence(XML_Descriptors.ColorSequenceKeypoint)
 end
@@ -1173,7 +1170,6 @@ do
 			end,
 		},
 		
-		-- UnionOperation specific fixes
 		UnionOperation = {
 			PhysicsData = function(instance)
 				local success, result = pcall(function() return instance:GetPhysicsData() end)
@@ -1189,7 +1185,6 @@ do
 			CollisionFidelityInternal = "CollisionFidelity",
 		},
 		
-		-- PartOperation fixes
 		PartOperation = {
 			PhysicsData = function(instance)
 				local success, result = pcall(function() return instance:GetPhysicsData() end)
@@ -1201,7 +1196,6 @@ do
 			InitialSize = "MeshSize",
 		},
 		
-		-- TriangleMeshPart fixes (parent class of UnionOperation)
 		TriangleMeshPart = {
 			PhysicsData = function(instance)
 				local success, result = pcall(function() return instance:GetPhysicsData() end)
@@ -1216,7 +1210,6 @@ do
 			end,
 		},
 		
-		-- AssetPart fixes
 		AssetPart = {
 			AssetId = function(instance)
 				return instance.AssetId or ""
@@ -1934,7 +1927,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		},
 		IgnoreSharedStrings = EXECUTOR_NAME ~= "Wave",
 		SharedStringOverwrite = false,
-		TreatUnionsAsParts = false, -- Set to true if you want UnionOperations converted to Parts
+		TreatUnionsAsParts = false,
 		AlternativeWritefile = not ArrayToDict({ "WRD", "Xeno", "Zorara" })[EXECUTOR_NAME],
 		OptionsAliases = {
 			DecompileTimeout = "timeout",
@@ -2763,12 +2756,10 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 							continue
 						end
 					else
-						-- Handle UnionOperation and PartOperation specially
 						if TreatUnionsAsParts and (instance:IsA("UnionOperation") or instance:IsA("PartOperation")) then
 							ClassName, InstanceOverride = "Part", replaceClassName(instance, InstanceName, ClassName)
 							ClassNameOverride = "BasePart"
 							
-							-- Store original data to preserve physics and asset info
 							if not InstanceOverride then
 								InstanceOverride = { Properties = {} }
 								InstancesOverrides[instance] = InstanceOverride
