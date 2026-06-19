@@ -345,11 +345,7 @@ print("  - Output: .rbxmx file in executor folder")
 print("")
 
 -- Save the workspace
-SaveModelAndTextures(game.Workspace, "workspace_models_" .. os.time())
-
--- Optional: Save additional locations
--- SaveModelAndTextures(game.Lighting, "lighting_models")
--- SaveModelAndTextures(game.ReplicatedStorage, "replicated_models")
+SaveModelAndTextures()
 
 print("")
 print("=== COMPLETE ===")
